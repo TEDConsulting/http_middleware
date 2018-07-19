@@ -17,7 +17,8 @@ http_middleware: any
 import 'package:http_middleware/http_middleware.dart';
 ```
 
-###Using `http_middleware`
+### Using `http_middleware`
+
 Create an object of `HttpWithMiddleware` by using the `build` factory constructor.
 
 The `build` constructor takes in a list of middlewares that are built for `http_middleware`. 
@@ -73,18 +74,52 @@ httpClient.close();
 ### Building your own middleware
 Building your own middleware with `http_middleware` is very easy, whether you want to create a package for `http_middleware` or you want to build a middleware solely for your own project.
 
-Once you have the necessary imports, all you have to do is extend the `MiddlewareContract` class which will give you access to all the functions in `http` module.
+Once you have the necessary imports, all you have to do is extend the `MiddlewareContract` class which will give you access to 2 functions.
+
+`interceptRequest(RequestData)` is the method called before any request is made. `interceptResponse(ResponseData)` is the method called after the response from request is received.
+
 You can then `@override` all the required functions you need to add middleware to.
 
-Example (A simple logger that logs data in a POST request):
+Example (A simple logger that logs data in all requests):
 ```dart
-class CustomMiddleWare extends MiddlewareContract {
-   @override
-   Function(http.Response) interceptPost({RequestData data}) {
-       print("POST Url: ${data.url}");
-       return (response) {
-           print("POST Status: ${response.body}");
-       };
-   }
+class Logger extends MiddlewareContract {
+  @override
+  interceptRequest({RequestData data}) {
+    print("Method: ${data.method}");
+    print("Url: ${data.url}");
+    print("Body: ${data.body}");
+  }
+
+  @override
+  interceptResponse({ResponseData data}) {
+    print("Status Code: ${data.statusCode}");
+    print("Method: ${data.method}");
+    print("Url: ${data.url}");
+    print("Body: ${data.body}");
+    print("Headers: ${data.headers}");
+  }
+}
+```
+
+You can also modify the `ResponseData` before the request is made and every response is parsed. For Example, if you want to wrap your data in a particular structure before sending, or you want every request header to have `Content-Type` set to `application/json`.
+
+```dart
+class Logger extends MiddlewareContract {
+  @override
+  interceptRequest({RequestData data}) {
+    //Adding content type to every request
+    data.headers["Content-Type"] = "application/json";
+    
+    data.body = jsonEncode({
+      uniqueId: "some unique id",
+      data: data.body,
+    });
+  }
+
+  @override
+  interceptResponse({ResponseData data}) {
+    //Unwrapping response from a structure
+    data.body = jsonDecode(data.body)["data"];
+  }
 }
 ```

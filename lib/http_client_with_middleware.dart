@@ -1,8 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:collection/collection.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/http.dart';
+import 'package:http_middleware/http_methods.dart';
 import 'package:http_middleware/models/request_data.dart';
+import 'package:http_middleware/models/response_data.dart';
 import 'middleware_contract.dart';
 
 ///Class to be used by the user to set up a new `http.Client` with middleware supported.
@@ -29,8 +33,10 @@ import 'middleware_contract.dart';
 ///```
 ///Don't forget to close the client once you are done, as a client keeps
 ///the connection alive with the server.
-class HttpClientWithMiddleware implements http.BaseClient {
+class HttpClientWithMiddleware extends http.BaseClient {
   final List<MiddlewareContract> middlewares;
+
+  final IOClient _client = IOClient();
 
   HttpClientWithMiddleware._internal({this.middlewares});
 
@@ -41,237 +47,94 @@ class HttpClientWithMiddleware implements http.BaseClient {
     return HttpClientWithMiddleware._internal(middlewares: middlewares);
   }
 
-  http.Client _client = http.IOClient();
+  Future<Response> head(url, {Map<String, String> headers}) =>
+      _sendUnstreamed("HEAD", url, headers);
 
-  @override
+  Future<Response> get(url, {Map<String, String> headers}) =>
+      _sendUnstreamed("GET", url, headers);
+
+  Future<Response> post(url,
+          {Map<String, String> headers, body, Encoding encoding}) =>
+      _sendUnstreamed("POST", url, headers, body, encoding);
+
+  Future<Response> put(url,
+          {Map<String, String> headers, body, Encoding encoding}) =>
+      _sendUnstreamed("PUT", url, headers, body, encoding);
+
+  Future<Response> patch(url,
+          {Map<String, String> headers, body, Encoding encoding}) =>
+      _sendUnstreamed("PATCH", url, headers, body, encoding);
+
+  Future<Response> delete(url, {Map<String, String> headers}) =>
+      _sendUnstreamed("DELETE", url, headers);
+
+  Future<String> read(url, {Map<String, String> headers}) {
+    return get(url, headers: headers).then((response) {
+      _checkResponseSuccess(url, response);
+      return response.body;
+    });
+  }
+
+  Future<Uint8List> readBytes(url, {Map<String, String> headers}) {
+    return get(url, headers: headers).then((response) {
+      _checkResponseSuccess(url, response);
+      return response.bodyBytes;
+    });
+  }
+
+  Future<StreamedResponse> send(BaseRequest request) => _client.send(request);
+
+  Future<Response> _sendUnstreamed(
+      String method, url, Map<String, String> headers,
+      [body, Encoding encoding]) async {
+    if (url is String) url = Uri.parse(url);
+    var request = new Request(method, url);
+
+    if (headers != null) request.headers.addAll(headers);
+    if (encoding != null) request.encoding = encoding;
+    if (body != null) {
+      if (body is String) {
+        request.body = body;
+      } else if (body is List) {
+        request.bodyBytes = DelegatingList.typed(body);
+      } else if (body is Map) {
+        request.bodyFields = DelegatingMap.typed(body);
+      } else {
+        throw new ArgumentError('Invalid request body "$body".');
+      }
+    }
+
+    //Send interception
+    middlewares.forEach(
+      (middleware) => middleware.interceptRequest(
+            data: RequestData(
+              method: methodFromString(method),
+              encoding: encoding,
+              body: body,
+              url: url,
+              headers: headers ?? <String, String>{},
+            ),
+          ),
+    );
+
+    return Response.fromStream(await send(request)).then((response) {
+      middlewares.forEach((middleware) => middleware.interceptResponse(
+          data: ResponseData.fromHttpResponse(response)));
+      return response;
+    });
+  }
+
+  void _checkResponseSuccess(url, Response response) {
+    if (response.statusCode < 400) return;
+    var message = "Request to $url failed with status ${response.statusCode}";
+    if (response.reasonPhrase != null) {
+      message = "$message: ${response.reasonPhrase}";
+    }
+    if (url is String) url = Uri.parse(url);
+    throw new ClientException("$message.", url);
+  }
+
   void close() {
     _client.close();
-  }
-
-  @override
-  Future<http.Response> delete(url, {Map<String, String> headers}) {
-    RequestData requestData =
-        _getRequestData(url: url, headers: headers, body: null, encoding: null);
-
-    var callbackList = <Function(http.Response)>[];
-
-    middlewares.forEach(
-      (middleware) {
-        Function(http.Response) responseCallback =
-            middleware.interceptDelete(data: requestData);
-        if (responseCallback != null) callbackList.add(responseCallback);
-      },
-    );
-
-    return _client.delete(requestData.url, headers: requestData.headers).then(
-      (response) {
-        callbackList.forEach((callback) => callback(response));
-        return response;
-      },
-    );
-  }
-
-  @override
-  Future<http.Response> get(url, {Map<String, String> headers}) {
-    RequestData requestData =
-        _getRequestData(url: url, headers: headers, body: null, encoding: null);
-
-    var callbackList = <Function(http.Response)>[];
-
-    middlewares.forEach(
-      (middleware) {
-        Function(http.Response) responseCallback =
-            middleware.interceptGet(data: requestData);
-        if (responseCallback != null) callbackList.add(responseCallback);
-      },
-    );
-
-    return _client.get(requestData.url, headers: requestData.headers).then(
-      (response) {
-        callbackList.forEach((callback) => callback(response));
-        return response;
-      },
-    );
-  }
-
-  @override
-  Future<http.Response> head(url, {Map<String, String> headers}) {
-    RequestData requestData = _getRequestData(url: url, headers: headers);
-
-    var callbackList = <Function(http.Response)>[];
-
-    middlewares.forEach(
-      (middleware) {
-        Function(http.Response) responseCallback =
-            middleware.interceptHead(data: requestData);
-        if (responseCallback != null) callbackList.add(responseCallback);
-      },
-    );
-
-    return _client.head(requestData.url, headers: requestData.headers).then(
-      (response) {
-        callbackList.forEach((callback) => callback(response));
-        return response;
-      },
-    );
-  }
-
-  @override
-  Future<http.Response> patch(url,
-      {Map<String, String> headers, body, Encoding encoding}) {
-    RequestData requestData = _getRequestData(
-        url: url, headers: headers, body: body, encoding: encoding);
-
-    var callbackList = <Function(http.Response)>[];
-
-    middlewares.forEach(
-      (middleware) {
-        Function(http.Response) responseCallback =
-            middleware.interceptPatch(data: requestData);
-        if (responseCallback != null) callbackList.add(responseCallback);
-      },
-    );
-
-    return _client
-        .patch(requestData.url,
-            headers: requestData.headers,
-            body: requestData.body,
-            encoding: requestData.encoding)
-        .then(
-      (response) {
-        callbackList.forEach((callback) => callback(response));
-        return response;
-      },
-    );
-  }
-
-  @override
-  Future<http.Response> post(url,
-      {Map<String, String> headers, body, Encoding encoding}) {
-    RequestData requestData = _getRequestData(
-        url: url, headers: headers, body: body, encoding: encoding);
-
-    var callbackList = <Function(http.Response)>[];
-
-    middlewares.forEach(
-      (middleware) {
-        Function(http.Response) responseCallback =
-            middleware.interceptPost(data: requestData);
-        if (responseCallback != null) callbackList.add(responseCallback);
-      },
-    );
-
-    return _client
-        .post(requestData.url,
-            headers: requestData.headers,
-            body: requestData.body,
-            encoding: requestData.encoding)
-        .then(
-      (response) {
-        callbackList.forEach((callback) => callback(response));
-        return response;
-      },
-    );
-  }
-
-  @override
-  Future<http.Response> put(url,
-      {Map<String, String> headers, body, Encoding encoding}) {
-    RequestData requestData = _getRequestData(
-        url: url, headers: headers, body: body, encoding: encoding);
-
-    var callbackList = <Function(http.Response)>[];
-
-    middlewares.forEach(
-      (middleware) {
-        Function(http.Response) responseCallback =
-            middleware.interceptPut(data: requestData);
-        if (responseCallback != null) callbackList.add(responseCallback);
-      },
-    );
-
-    return _client
-        .put(requestData.url,
-            headers: requestData.headers,
-            body: requestData.body,
-            encoding: requestData.encoding)
-        .then(
-      (response) {
-        callbackList.forEach((callback) => callback(response));
-        return response;
-      },
-    );
-  }
-
-  @override
-  Future<String> read(url, {Map<String, String> headers}) {
-    RequestData requestData = _getRequestData(url: url, headers: headers);
-
-    var callbackList = <Function(String)>[];
-
-    middlewares.forEach(
-      (middleware) {
-        Function(String) responseCallback =
-            middleware.interceptRead(data: requestData);
-        if (responseCallback != null) callbackList.add(responseCallback);
-      },
-    );
-
-    return _client.read(requestData.url, headers: requestData.headers).then(
-      (response) {
-        callbackList.forEach((callback) => callback(response));
-        return response;
-      },
-    );
-  }
-
-  @override
-  Future<Uint8List> readBytes(url, {Map<String, String> headers}) {
-    RequestData requestData = _getRequestData(url: url, headers: headers);
-
-    var callbackList = <Function(Uint8List)>[];
-
-    middlewares.forEach(
-      (middleware) {
-        Function(Uint8List) responseCallback =
-            middleware.interceptReadBytes(data: requestData);
-        if (responseCallback != null) callbackList.add(responseCallback);
-      },
-    );
-
-    return _client
-        .readBytes(requestData.url, headers: requestData.headers)
-        .then(
-      (response) {
-        callbackList.forEach((callback) => callback(response));
-        return response;
-      },
-    );
-  }
-
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) {
-    var callbackList = <Function(http.StreamedResponse)>[];
-
-    middlewares.forEach(
-      (middleware) {
-        Function(http.StreamedResponse) responseCallback =
-            middleware.interceptSend(request: request);
-        if (responseCallback != null) callbackList.add(responseCallback);
-      },
-    );
-
-    return _client.send(request).then(
-      (response) {
-        callbackList.forEach((callback) => callback(response));
-        return response;
-      },
-    );
-  }
-
-  RequestData _getRequestData(
-      {String url, Map<String, String> headers, body, Encoding encoding}) {
-    return RequestData(
-        url: url, headers: headers, body: body, encoding: encoding);
   }
 }
