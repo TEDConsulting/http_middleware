@@ -41,3 +41,5 @@ dependencies:
   #
   # For details regarding fonts in packages, see
   # https://flutter.io/custom-fonts/#from-packages
+environment:
+    sdk: ">=1.8.0 <2.0.0"
