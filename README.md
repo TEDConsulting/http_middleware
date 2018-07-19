@@ -101,7 +101,7 @@ class Logger extends MiddlewareContract {
 }
 ```
 
-You can also modify the `ResponseData` before the request is made and every response is parsed. For Example, if you want to wrap your data in a particular structure before sending, or you want every request header to have `Content-Type` set to `application/json`.
+You can also modify the `RequestData` before the request is made and every `ResponseData` after every response is received. For Example, if you want to wrap your data in a particular structure before sending, or you want every request header to have `Content-Type` set to `application/json`.
 
 ```dart
 class Logger extends MiddlewareContract {
