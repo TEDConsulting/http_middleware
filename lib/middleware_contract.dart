@@ -16,48 +16,87 @@ import 'package:http_middleware/models/request_data.dart';
 ///
 ///Example (Simple logging):
 ///
-///   class CustomMiddleWare extends MiddlewareContract {
-///       @override
-///       Function(http.Response) interceptPost({RequestData data}) {
-///           print("POST Url: ${response}")
-///           return (response) {
-///               print("POST Status: ${}")
-///           };
-///       }
-///   }
+///```dart
+///class CustomMiddleWare extends MiddlewareContract {
+///    @override
+///    Function(http.Response) interceptPost({RequestData data}) {
+///        print("POST Url: ${response}")
+///        return (response) {
+///            print("POST Status: ${}")
+///        };
+///    }
+///}
+///```
 abstract class MiddlewareContract {
+
+  ///Intercept POST request made by the `http.Client`.
+  ///
+  ///@param data `RequestData` containing url, body, headers and encoding.
+  ///@returns A callback function used to intercept response.
   Function(http.Response) interceptPost({RequestData data}) {
     return null;
   }
 
+  ///Intercept DELETE request made by the `http.Client`.
+  ///
+  ///@param data `RequestData` containing url, body, headers and encoding.
+  ///@returns A callback function used to intercept response.
   Function(http.Response) interceptDelete({RequestData data}) {
     return null;
   }
 
+  ///Intercept GET request made by the `http.Client`.
+  ///
+  ///@param data `RequestData` containing url, body, headers and encoding.
+  ///@returns A callback function used to intercept response.
   Function(http.Response) interceptGet({RequestData data}) {
     return null;
   }
 
+  ///Intercept HEAD request made by the `http.Client`.
+  ///
+  ///@param data `RequestData` containing url, body, headers and encoding.
+  ///@returns A callback function used to intercept response.
   Function(http.Response) interceptHead({RequestData data}) {
     return null;
   }
 
+  ///Intercept PATCH request made by the `http.Client`.
+  ///
+  ///@param data `RequestData` containing url, body, headers and encoding.
+  ///@returns A callback function used to intercept response.
   Function(http.Response) interceptPatch({RequestData data}) {
     return null;
   }
 
+  ///Intercept PUT request made by the `http.Client`.
+  ///
+  ///@param data `RequestData` containing url, body, headers and encoding.
+  ///@returns A callback function used to intercept response.
   Function(http.Response) interceptPut({RequestData data}) {
     return null;
   }
 
+  ///Intercept READ request made by the `http.Client`.
+  ///
+  ///@param data `RequestData` containing url, body, headers and encoding.
+  ///@returns A callback function used to intercept response.
   Function(String) interceptRead({RequestData data}) {
     return null;
   }
 
+  ///Intercept READ BYTES request made by the `http.Client`.
+  ///
+  ///@param data `RequestData` containing url, body, headers and encoding.
+  ///@returns A callback function used to intercept response.
   Function(Uint8List) interceptReadBytes({RequestData data}) {
     return null;
   }
 
+  ///Intercept SEND request made by the `http.Client`.
+  ///
+  ///@param data `RequestData` containing url, body, headers and encoding.
+  ///@returns A callback function used to intercept stream response.
   Function(http.StreamedResponse) interceptSend({http.BaseRequest request}) {
     return null;
   }

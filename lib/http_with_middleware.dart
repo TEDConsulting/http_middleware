@@ -5,21 +5,36 @@ import 'package:http/http.dart' as http;
 import 'package:http_middleware/models/request_data.dart';
 import 'middleware_contract.dart';
 
-class HttpMiddlewareClient implements http.Client {
+///Class to be used by the user as a replacement for 'http' with middleware supported.
+///call the `build()` constructor passing in the list of middlewares.
+///Example:
+///```dart
+/// HttpWithMiddleware http = HttpWithMiddleware.build(middlewares: [
+///     Logger(),
+/// ]);
+///```
+///Then call the functions you want to, on the created `http` object.
+///```dart
+/// http.get(...);
+/// http.post(...);
+/// http.put(...);
+/// http.delete(...);
+/// http.head(...);
+/// http.patch(...);
+/// http.read(...);
+/// http.readBytes(...);
+///```
+class HttpWithMiddleware {
   final List<MiddlewareContract> middlewares;
 
-  HttpMiddlewareClient.build({
-    this.middlewares,
-  });
+  HttpWithMiddleware._internal({this.middlewares});
 
-  http.Client _client = http.IOClient();
-
-  @override
-  void close() {
-    _client.close();
+  factory HttpWithMiddleware.build({List<MiddlewareContract> middlewares}) {
+    //Remove any value that is null.
+    middlewares.removeWhere((middleware) => middleware == null);
+    return HttpWithMiddleware._internal(middlewares: middlewares);
   }
 
-  @override
   Future<http.Response> delete(url, {Map<String, String> headers}) {
     RequestData requestData =
         _getRequestData(url: url, headers: headers, body: null, encoding: null);
@@ -34,7 +49,7 @@ class HttpMiddlewareClient implements http.Client {
       },
     );
 
-    return _client.delete(requestData.url, headers: requestData.headers).then(
+    return http.delete(requestData.url, headers: requestData.headers).then(
       (response) {
         callbackList.forEach((callback) => callback(response));
         return response;
@@ -42,7 +57,6 @@ class HttpMiddlewareClient implements http.Client {
     );
   }
 
-  @override
   Future<http.Response> get(url, {Map<String, String> headers}) {
     RequestData requestData =
         _getRequestData(url: url, headers: headers, body: null, encoding: null);
@@ -57,7 +71,7 @@ class HttpMiddlewareClient implements http.Client {
       },
     );
 
-    return _client.get(requestData.url, headers: requestData.headers).then(
+    return http.get(requestData.url, headers: requestData.headers).then(
       (response) {
         callbackList.forEach((callback) => callback(response));
         return response;
@@ -65,7 +79,6 @@ class HttpMiddlewareClient implements http.Client {
     );
   }
 
-  @override
   Future<http.Response> head(url, {Map<String, String> headers}) {
     RequestData requestData = _getRequestData(url: url, headers: headers);
 
@@ -79,7 +92,7 @@ class HttpMiddlewareClient implements http.Client {
       },
     );
 
-    return _client.head(requestData.url, headers: requestData.headers).then(
+    return http.head(requestData.url, headers: requestData.headers).then(
       (response) {
         callbackList.forEach((callback) => callback(response));
         return response;
@@ -87,7 +100,6 @@ class HttpMiddlewareClient implements http.Client {
     );
   }
 
-  @override
   Future<http.Response> patch(url,
       {Map<String, String> headers, body, Encoding encoding}) {
     RequestData requestData = _getRequestData(
@@ -103,7 +115,7 @@ class HttpMiddlewareClient implements http.Client {
       },
     );
 
-    return _client
+    return http
         .patch(requestData.url,
             headers: requestData.headers,
             body: requestData.body,
@@ -116,7 +128,6 @@ class HttpMiddlewareClient implements http.Client {
     );
   }
 
-  @override
   Future<http.Response> post(url,
       {Map<String, String> headers, body, Encoding encoding}) {
     RequestData requestData = _getRequestData(
@@ -132,7 +143,7 @@ class HttpMiddlewareClient implements http.Client {
       },
     );
 
-    return _client
+    return http
         .post(requestData.url,
             headers: requestData.headers,
             body: requestData.body,
@@ -145,7 +156,6 @@ class HttpMiddlewareClient implements http.Client {
     );
   }
 
-  @override
   Future<http.Response> put(url,
       {Map<String, String> headers, body, Encoding encoding}) {
     RequestData requestData = _getRequestData(
@@ -161,7 +171,7 @@ class HttpMiddlewareClient implements http.Client {
       },
     );
 
-    return _client
+    return http
         .put(requestData.url,
             headers: requestData.headers,
             body: requestData.body,
@@ -174,7 +184,6 @@ class HttpMiddlewareClient implements http.Client {
     );
   }
 
-  @override
   Future<String> read(url, {Map<String, String> headers}) {
     RequestData requestData = _getRequestData(url: url, headers: headers);
 
@@ -188,7 +197,7 @@ class HttpMiddlewareClient implements http.Client {
       },
     );
 
-    return _client.read(requestData.url, headers: requestData.headers).then(
+    return http.read(requestData.url, headers: requestData.headers).then(
       (response) {
         callbackList.forEach((callback) => callback(response));
         return response;
@@ -196,7 +205,6 @@ class HttpMiddlewareClient implements http.Client {
     );
   }
 
-  @override
   Future<Uint8List> readBytes(url, {Map<String, String> headers}) {
     RequestData requestData = _getRequestData(url: url, headers: headers);
 
@@ -210,29 +218,7 @@ class HttpMiddlewareClient implements http.Client {
       },
     );
 
-    return _client
-        .readBytes(requestData.url, headers: requestData.headers)
-        .then(
-      (response) {
-        callbackList.forEach((callback) => callback(response));
-        return response;
-      },
-    );
-  }
-
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) {
-    var callbackList = <Function(http.StreamedResponse)>[];
-
-    middlewares.forEach(
-      (middleware) {
-        Function(http.StreamedResponse) responseCallback =
-            middleware.interceptSend(request: request);
-        if (responseCallback != null) callbackList.add(responseCallback);
-      },
-    );
-
-    return _client.send(request).then(
+    return http.readBytes(requestData.url, headers: requestData.headers).then(
       (response) {
         callbackList.forEach((callback) => callback(response));
         return response;
