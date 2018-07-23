@@ -22,13 +22,13 @@ import 'package:http_middleware/http_middleware.dart';
 Create an object of `HttpWithMiddleware` by using the `build` factory constructor.
 
 The `build` constructor takes in a list of middlewares that are built for `http_middleware`. 
-One very nice middleware you can use is the [`http_logger`]() package. We will use that here for demonstration.
+One very nice middleware you can use is the [`http_logger`](https://pub.dartlang.org/packages/http_logger) package. We will use that here for demonstration.
 
 ##### (You can also build your own middleware for `http_middleware`. Check out [Build your own middleware](#building-your-own-middleware))
 
 ```dart
 HttpWithMiddleware http = HttpWithMiddleware.build(middlewares: [
-    Logger(),
+    HttpLogger(logLevel: LogLevel.BODY),
 ]);
 ```
 
@@ -48,7 +48,7 @@ With `http_middleware` you can also specify the timeout of requests. So if you w
 HttpWithMiddleware http = HttpWithMiddleware.build(
   requestTimeout: Duration(seconds: 30),
   middlewares: [
-    Logger(),
+    HttpLogger(logLevel: LogLevel.BODY),
 ]);
 ```
 
@@ -80,7 +80,7 @@ http.readBytes(...);
 If you want to use a `http.Client` in order to keep the connection alive with the server, use `HttpClientWithMiddleware`.
 ```dart
 HttpClientWithMiddleware httpClient = HttpClientWithMiddleware.build(middlewares: [
-     Logger(),
+    HttpLogger(logLevel: LogLevel.BODY),
 ]);
 
 var response = await httpClient.post('https://jsonplaceholder.typicode.com/posts/',
@@ -144,3 +144,10 @@ class Logger extends MiddlewareContract {
   }
 }
 ```
+
+### Packages built on `http_middleware`
+
+- `http_logger` : Easy request and response logging.
+
+
+If your package uses `http_middleware`, [open an issue](https://github.com/gurleensethi/http_middleware/issues/new) and tell me, i will be happy to add it to the list.

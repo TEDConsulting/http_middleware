@@ -1,6 +1,6 @@
 name: http_middleware
 description: A middleware library for Dart http library.
-version: 0.0.5
+version: 0.0.7
 author: Gurleen Sethi <sarusethi@rocketmail.com>
 homepage: http://www.github.com/gurleensethi
 
