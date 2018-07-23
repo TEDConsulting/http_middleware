@@ -42,6 +42,27 @@ var response = await http.post('https://jsonplaceholder.typicode.com/posts/',
 var response = await http.get('https://jsonplaceholder.typicode.com/posts/');
 ```
 
+#### Request Timout
+With `http_middleware` you can also specify the timeout of requests. So if you want a request to be timeout in 30 seconds:
+```dart
+HttpWithMiddleware http = HttpWithMiddleware.build(
+  requestTimeout: Duration(seconds: 30),
+  middlewares: [
+    Logger(),
+]);
+```
+
+You need to catch the exception thrown to know if connection timed out.
+ ```dart
+try {
+  var response = await http.get('https://jsonplaceholder.typicode.com/posts/');
+} catch(e) {
+  if (e is TimeoutException) {
+    //Timed out
+  }
+}
+```
+
 `HttpWithMiddleware` supports all the functions that [`http`](https://pub.dartlang.org/packages/http) provides.
 
 ```dart

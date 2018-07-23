@@ -10,3 +10,5 @@ ios/Flutter/Generated.xcconfig
 ios/Runner/GeneratedPluginRegistrant.*
 
 example/
+example/*
+example/example.dart

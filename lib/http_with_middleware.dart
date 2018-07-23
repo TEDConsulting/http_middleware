@@ -27,14 +27,22 @@ import 'middleware_contract.dart';
 /// http.readBytes(...);
 ///```
 class HttpWithMiddleware {
-  final List<MiddlewareContract> middlewares;
+  List<MiddlewareContract> middlewares;
+  Duration requestTimeout;
 
-  HttpWithMiddleware._internal({this.middlewares});
+  HttpWithMiddleware._internal({
+    this.middlewares,
+    this.requestTimeout,
+  });
 
-  factory HttpWithMiddleware.build({List<MiddlewareContract> middlewares}) {
+  factory HttpWithMiddleware.build({
+    List<MiddlewareContract> middlewares,
+    Duration requestTimeout,
+  }) {
     //Remove any value that is null.
-    middlewares.removeWhere((middleware) => middleware == null);
-    return HttpWithMiddleware._internal(middlewares: middlewares);
+    middlewares?.removeWhere((middleware) => middleware == null);
+    return new HttpWithMiddleware._internal(
+        middlewares: middlewares, requestTimeout: requestTimeout);
   }
 
   Future<Response> head(url, {Map<String, String> headers}) {
@@ -111,16 +119,16 @@ class HttpWithMiddleware {
         url: url,
         headers: headers ?? <String, String>{});
     middlewares
-        .forEach((middleware) => middleware.interceptRequest(data: data));
+        ?.forEach((middleware) => middleware.interceptRequest(data: data));
     return data;
   }
 
   Future<T> _withClient<T>(Future<T> fn(Client client)) async {
     var client = new Client();
     try {
-      T response = await fn(client);
+      T response = requestTimeout == null ? await fn(client) : await fn(client).timeout(requestTimeout);
       if (response is Response) {
-        middlewares.forEach((middleware) => middleware.interceptResponse(
+        middlewares?.forEach((middleware) => middleware.interceptResponse(
             data: ResponseData.fromHttpResponse(response)));
       }
       return response;

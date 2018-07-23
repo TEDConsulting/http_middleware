@@ -34,17 +34,23 @@ import 'middleware_contract.dart';
 ///Don't forget to close the client once you are done, as a client keeps
 ///the connection alive with the server.
 class HttpClientWithMiddleware extends http.BaseClient {
-  final List<MiddlewareContract> middlewares;
+  List<MiddlewareContract> middlewares;
+  Duration requestTimeout;
 
   final IOClient _client = IOClient();
 
-  HttpClientWithMiddleware._internal({this.middlewares});
+  HttpClientWithMiddleware._internal({this.middlewares, this.requestTimeout});
 
-  factory HttpClientWithMiddleware.build(
-      {List<MiddlewareContract> middlewares}) {
+  factory HttpClientWithMiddleware.build({
+    List<MiddlewareContract> middlewares,
+    Duration requestTimeout,
+  }) {
     //Remove any value that is null.
-    middlewares.removeWhere((middleware) => middleware == null);
-    return HttpClientWithMiddleware._internal(middlewares: middlewares);
+    middlewares?.removeWhere((middleware) => middleware == null);
+    return HttpClientWithMiddleware._internal(
+      middlewares: middlewares,
+      requestTimeout: requestTimeout,
+    );
   }
 
   Future<Response> head(url, {Map<String, String> headers}) =>
@@ -105,20 +111,22 @@ class HttpClientWithMiddleware extends http.BaseClient {
     }
 
     //Send interception
-    middlewares.forEach(
+    middlewares?.forEach(
       (middleware) => middleware.interceptRequest(
             data: RequestData(
               method: methodFromString(method),
               encoding: encoding,
               body: body,
-              url: url,
+              url: url.toString(),
               headers: headers ?? <String, String>{},
             ),
           ),
     );
 
-    return Response.fromStream(await send(request)).then((response) {
-      middlewares.forEach((middleware) => middleware.interceptResponse(
+    var stream = requestTimeout == null ? await send(request) : await send(request).timeout(requestTimeout);
+
+    return Response.fromStream(stream).then((response) {
+      middlewares?.forEach((middleware) => middleware.interceptResponse(
           data: ResponseData.fromHttpResponse(response)));
       return response;
     });
