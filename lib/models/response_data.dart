@@ -8,6 +8,7 @@ class ResponseData {
   Method method;
   Map<String, String> headers;
   String body;
+  List<int> bodyBytes;
   int contentLength;
   bool isRedirect;
   bool persistentConnection;
@@ -18,6 +19,7 @@ class ResponseData {
     this.statusCode,
     this.headers,
     this.body,
+    this.bodyBytes,
     this.contentLength,
     this.isRedirect,
     this.persistentConnection,
@@ -28,6 +30,7 @@ class ResponseData {
       statusCode: response.statusCode,
       headers: response.headers,
       body: response.body,
+      bodyBytes: response.bodyBytes,
       contentLength: response.contentLength,
       isRedirect: response.isRedirect,
       url: response.request.url.toString(),
