@@ -134,7 +134,6 @@ class HttpWithMiddleware {
         middlewares?.forEach(
             (middleware) => middleware.interceptResponse(data: responseData));
 
-        // ignore: unnecessary_cast
         Response resultResponse = Response(
           responseData.body,
           responseData.statusCode,

@@ -123,12 +123,29 @@ class HttpClientWithMiddleware extends http.BaseClient {
           ),
     );
 
-    var stream = requestTimeout == null ? await send(request) : await send(request).timeout(requestTimeout);
+    var stream = requestTimeout == null
+        ? await send(request)
+        : await send(request).timeout(requestTimeout);
 
     return Response.fromStream(stream).then((response) {
-      middlewares?.forEach((middleware) => middleware.interceptResponse(
-          data: ResponseData.fromHttpResponse(response)));
-      return response;
+      var responseData = ResponseData.fromHttpResponse(response);
+
+      middlewares?.forEach(
+          (middleware) => middleware.interceptResponse(data: responseData));
+
+      Response resultResponse = Response(
+        responseData.body,
+        responseData.statusCode,
+        headers: responseData.headers,
+        persistentConnection: responseData.persistentConnection,
+        isRedirect: responseData.isRedirect,
+        request: Request(
+          responseData.method.toString().substring(7),
+          Uri.parse(responseData.url),
+        ),
+      );
+
+      return resultResponse;
     });
   }
 

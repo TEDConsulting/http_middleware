@@ -12,3 +12,5 @@ ios/Runner/GeneratedPluginRegistrant.*
 example/
 example/*
 example/example.dart
+
+.idea/workspace.xml
