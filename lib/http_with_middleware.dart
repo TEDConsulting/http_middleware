@@ -126,10 +126,28 @@ class HttpWithMiddleware {
   Future<T> _withClient<T>(Future<T> fn(Client client)) async {
     var client = new Client();
     try {
-      T response = requestTimeout == null ? await fn(client) : await fn(client).timeout(requestTimeout);
+      T response = requestTimeout == null
+          ? await fn(client)
+          : await fn(client).timeout(requestTimeout);
       if (response is Response) {
-        middlewares?.forEach((middleware) => middleware.interceptResponse(
-            data: ResponseData.fromHttpResponse(response)));
+        var responseData = ResponseData.fromHttpResponse(response);
+        middlewares?.forEach(
+            (middleware) => middleware.interceptResponse(data: responseData));
+
+        // ignore: unnecessary_cast
+        Response resultResponse = Response(
+          responseData.body,
+          responseData.statusCode,
+          headers: responseData.headers,
+          persistentConnection: responseData.persistentConnection,
+          isRedirect: responseData.isRedirect,
+          request: Request(
+            responseData.method.toString().substring(7),
+            Uri.parse(responseData.url),
+          ),
+        );
+
+        return resultResponse as T;
       }
       return response;
     } finally {
