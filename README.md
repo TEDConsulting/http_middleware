@@ -147,7 +147,7 @@ class Logger extends MiddlewareContract {
 
 ### Packages built on `http_middleware`
 
-- `http_logger` : Easy request and response logging.
+- [`http_logger`](https://github.com/gurleensethi/http_logger) : Easy request and response logging.
 
 
 If your package uses `http_middleware`, [open an issue](https://github.com/gurleensethi/http_middleware/issues/new) and tell me, i will be happy to add it to the list.
