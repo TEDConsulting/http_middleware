@@ -1,6 +1,6 @@
 name: http_middleware
 description: A middleware library for Dart http library.
-version: 0.0.9
+version: 1.0.0
 author: Gurleen Sethi <sarusethi@rocketmail.com>
 homepage: https://github.com/gurleensethi/http_middleware
 
@@ -42,4 +42,5 @@ dependencies:
   # For details regarding fonts in packages, see
   # https://flutter.io/custom-fonts/#from-packages
 environment:
-    sdk: ">=1.8.0 <2.0.0"
+  sdk: ">=2.0.0-dev.28.0 <3.0.0"
+  flutter: ">=0.1.4 <2.0.0"
