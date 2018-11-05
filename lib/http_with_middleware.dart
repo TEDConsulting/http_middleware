@@ -77,7 +77,7 @@ class HttpWithMiddleware {
         body: body,
         encoding: encoding);
     return _withClient((client) => client.put(data.url,
-        headers: headers, body: data.body, encoding: data.encoding));
+        headers: data.headers, body: data.body, encoding: data.encoding));
   }
 
   Future<Response> patch(url,
