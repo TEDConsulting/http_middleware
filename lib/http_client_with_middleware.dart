@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:collection/collection.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
+import 'package:http/io_client.dart';
 import 'package:http_middleware/http_methods.dart';
 import 'package:http_middleware/models/request_data.dart';
 import 'package:http_middleware/models/response_data.dart';
